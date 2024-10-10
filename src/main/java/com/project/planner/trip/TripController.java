@@ -18,29 +18,29 @@ public class TripController {
     private ParticipantService participantService;
 
     @Autowired
-    private  TripRepsitory repsitory;
+    private  TripRepository repository;
 
     @PostMapping
     public ResponseEntity<TripCreateResponse> createTrip(@RequestBody TripRequestPayload payload) {
         Trip newTrip = new Trip(payload);
 
-        this.repsitory.save(newTrip);
+        this.repository.save(newTrip);
 
-        this.participantService.registerParticipantsToEvent(payload.emails_to_invite(), newTrip.getId());
+        this.participantService.registerParticipantsToEvent(payload.emails_to_invite(), newTrip);
 
         return ResponseEntity.ok(new TripCreateResponse((newTrip.getId())));
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Trip> getTripDetails(@PathVariable UUID id){
-        Optional<Trip> trip = this.repsitory.findById(id);
+        Optional<Trip> trip = this.repository.findById(id);
 
         return trip.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<Trip> updateTrip(@PathVariable UUID id, @RequestBody TripRequestPayload payload){
-        Optional<Trip> trip = this.repsitory.findById(id);
+        Optional<Trip> trip = this.repository.findById(id);
 
         if (trip.isPresent()){
             Trip rawTrip = trip.get();
@@ -48,7 +48,7 @@ public class TripController {
             rawTrip.setStartsAt(LocalDateTime.parse(payload.starts_at(), DateTimeFormatter.ISO_DATE_TIME));
             rawTrip.setDestination(payload.destination());
 
-            this.repsitory.save(rawTrip);
+            this.repository.save(rawTrip);
 
             return ResponseEntity.ok(rawTrip);
         }
@@ -57,13 +57,13 @@ public class TripController {
 
     @GetMapping("/{id}/confirm")
     public ResponseEntity<Trip> confirmTrip(@PathVariable UUID id){
-        Optional<Trip> trip = this.repsitory.findById(id);
+        Optional<Trip> trip = this.repository.findById(id);
 
         if (trip.isPresent()){
             Trip rawTrip = trip.get();
             rawTrip.setIsConfirmed(true);
 
-            this.repsitory.save(rawTrip);
+            this.repository.save(rawTrip);
             this.participantService.triggerConfirmationEmailToParticipants(id);
 
             return ResponseEntity.ok(rawTrip);
